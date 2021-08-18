@@ -1,9 +1,9 @@
 import './App.css';
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import SearchForm from './components/SearchForm'
 import PersonForm from './components/PersonForm'
 import Display from './components/Display'
+import contactService from './services/contacts'
 
 const App = () => {
   const [ persons, setPersons ] = useState([]) 
@@ -13,18 +13,14 @@ const App = () => {
   const [ showSearch, setShowSearch ] = useState([])
 
   useEffect(() => {
-    console.log('effect')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        setPersons(response.data)
-        setShowSearch(response.data)
+    contactService
+      .getAll()
+      .then(initialContacts => {
+        setPersons(initialContacts)
+        setShowSearch(initialContacts)
       })
   }, [])
 
-  console.log('people', persons)
-  console.log('show', showSearch)
 
   const addPerson = (event) => {
     event.preventDefault()
@@ -36,9 +32,25 @@ const App = () => {
       return false;
     })
     if (exists !== -1){
-      alert(`${newName} already exists!`)
-      setNewName('')
-      setNewNumber('')
+      if(window.confirm(`${newName} already exists, would you like to update their number?`)){
+        const person = persons.find(i => i.name.toUpperCase() === newName.toUpperCase() )
+        const personID = person.id
+        const changedContact = {...person, number: newNumber }
+
+        contactService
+          .update(personID, changedContact)
+          .then(returnedContact => {
+            setPersons(persons.map(person => person.id === personID ? changedContact : person))
+            setShowSearch(persons.map(person => person.id === personID ? changedContact : person))
+            setNewName('')
+            setNewNumber('')
+            
+          })
+      }
+      else{
+        setNewName('')
+        setNewNumber('')
+      }
     }
     else {
       const personObject = {
@@ -46,11 +58,15 @@ const App = () => {
         number: newNumber,
         id: persons.length + 1
       }
-      setPersons(persons.concat(personObject))
-      setShowSearch(persons.concat(personObject))
-      setNewNumber('')
-      setNewName('')
-      
+
+      contactService
+        .create(personObject)
+        .then(updatedContacts => {
+          setPersons(persons.concat(updatedContacts))
+          setShowSearch(persons.concat(updatedContacts))
+          setNewNumber('')
+          setNewName('')
+        })    
     }
   }
 
@@ -77,7 +93,7 @@ const App = () => {
       <h1>Phonebook</h1>
       <SearchForm newSearch = {newSearch} handleNewSearch = {handleNewSearch}/>
       <PersonForm addPerson = {addPerson} newName = {newName} handleNewName = {handleNewName} newNumber = {newNumber} handleNewNumber = {handleNewNumber}/>
-      <Display showSearch = {showSearch}/>
+      <Display showSearch = {showSearch} persons = {persons} setShowSearch = {setShowSearch} setPersons = {setPersons}/>
     </div>
   )
 }
