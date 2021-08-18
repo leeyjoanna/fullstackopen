@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import Note from './components/Note'
+import noteService from './services/notes'
 
 
 
@@ -10,18 +11,13 @@ const App = () => {
   const [showAll, setShowAll] = useState(true)
   
   const hook = () => {
-    console.log('effect')
-    axios
-      .get('http://localhost:3001/notes')
-      .then(response => {
-        console.log('promise fulfilled')
-        setNotes(response.data)
+    noteService 
+      .getAll()
+      .then(initialNotes => {
+        setNotes(initialNotes)
       })
   }
-  
   useEffect(hook, [])
-
-  console.log('render', notes.length, 'notes')
 
   // need to have onchange mech because input value now being controlled by App comp
   const handleNoteChange = (event) => {
@@ -33,7 +29,28 @@ const App = () => {
     ? notes 
     : notes.filter(note => note.important)
 
-  
+  // importance toggle
+  const toggleImportanceOf = (id) => {
+    console.log(`importance of ${id} needs to be toggled`)
+    const url = `http://localhost:3001/notes/${id}`
+    // this note is a reference to note in state, do not want to change state directly
+    const note = notes.find(n => n.id === id)
+    // new object exact copy of old note but with importance changed 
+    const changedNote = {...note, important: !note.important}
+
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note => note.id !== id ? note: returnedNote))
+      })
+      .catch(error => {
+        alert(
+          `the note '${note.content}' was already deleted from server`
+        )
+        setNotes(notes.filter(n => n.id !== id))
+      })
+  }
+
   const addNote = (event) => {
     event.preventDefault()
     // create new Note object
@@ -41,11 +58,16 @@ const App = () => {
       content: newNote,
       date: new Date().toISOString(),
       important: Math.random() <0.5,
-      id: notes.length + 1
     }
-    // add it to array notes via concat which creates NEW COPY of array
-    setNotes(notes.concat(noteObject))
-    setNewNote('')
+
+    // post to notes db (update server)
+    // add it to array notes via concat which creates NEW COPY of array (update state)
+    noteService
+      .create(noteObject)
+      .then(returnedNote => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote('')
+      })
   }
   return (
     <div>
@@ -56,8 +78,8 @@ const App = () => {
         </button>
       </div>
       <ul>
-        {notesToShow.map(note => 
-          <Note key={note.id} note={note} />
+        {notesToShow.map((note, idx) => 
+          <Note key={idx} note={note} toggleImportance = {() => toggleImportanceOf(note.id)}/>
         )}
       </ul>
       <form onSubmit={addNote}>
