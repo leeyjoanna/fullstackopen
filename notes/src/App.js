@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import Note from './components/Note'
 import noteService from './services/notes'
 
+const Footer = () => {
+  const footerStyle = {
+    color: 'green',
+    fontStyle: 'italic',
+    fontSize: 16
+  }
+  return (
+    <div style={footerStyle}>
+      <br />
+      <em>Note app, Department of Computer Science, University of Helsinki 2021</em>
+    </div>
+  )
+}
 
 
 const App = () => {
   const [notes, setNotes] = useState([])
   const [newNote, setNewNote] = useState('')
   const [showAll, setShowAll] = useState(true)
-  
+  const [errorMessage, setErrorMessage] = useState(null)
+   
   const hook = () => {
     noteService 
       .getAll()
@@ -29,10 +42,20 @@ const App = () => {
     ? notes 
     : notes.filter(note => note.important)
 
+  // notification of error
+  const Notification = ({ message }) => {
+    if (message === null) {
+      return null
+    }
+  
+    return (
+      <div className="error">
+        {message}
+      </div>
+    )
+  }
   // importance toggle
   const toggleImportanceOf = (id) => {
-    console.log(`importance of ${id} needs to be toggled`)
-    const url = `http://localhost:3001/notes/${id}`
     // this note is a reference to note in state, do not want to change state directly
     const note = notes.find(n => n.id === id)
     // new object exact copy of old note but with importance changed 
@@ -44,12 +67,17 @@ const App = () => {
         setNotes(notes.map(note => note.id !== id ? note: returnedNote))
       })
       .catch(error => {
-        alert(
-          `the note '${note.content}' was already deleted from server`
+        setErrorMessage(
+          `Note '${note.content}' was already removed from server`
         )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
         setNotes(notes.filter(n => n.id !== id))
       })
   }
+
+  
 
   const addNote = (event) => {
     event.preventDefault()
@@ -72,12 +100,13 @@ const App = () => {
   return (
     <div>
       <h1>Notes</h1>
+      <Notification message = {errorMessage} />
       <div>
         <button onClick={()=> setShowAll(!showAll)}>
           show {showAll ? 'important': 'all'}
         </button>
       </div>
-      <ul>
+      <ul className = 'note'>
         {notesToShow.map((note, idx) => 
           <Note key={idx} note={note} toggleImportance = {() => toggleImportanceOf(note.id)}/>
         )}
@@ -86,7 +115,9 @@ const App = () => {
         <input value={newNote} onChange={handleNoteChange}/>
         <button type="submit">save</button>
       </form>
+      <Footer/>
     </div>
+    
   )
 }
 
