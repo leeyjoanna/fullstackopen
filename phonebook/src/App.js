@@ -5,12 +5,43 @@ import PersonForm from './components/PersonForm'
 import Display from './components/Display'
 import contactService from './services/contacts'
 
+const Message = ({message}) => {
+  if (message === null){
+    return (
+      <div></div>
+    )
+  }
+    return (
+      <div className = 'message'>
+        {message}
+      </div>
+    )
+  }
+
+const Error = ({errorMessage}) => {
+  if (errorMessage === null){
+    return(
+      <div></div>
+    )
+  }
+  
+  return (
+    <div className = 'error'>
+      {errorMessage}
+    </div>
+  )
+}
+  
+  
+
 const App = () => {
   const [ persons, setPersons ] = useState([]) 
   const [ newName, setNewName ] = useState('')
   const [ newNumber, setNewNumber ] = useState('')
   const [ newSearch, setNewSearch ] = useState('')
   const [ showSearch, setShowSearch ] = useState([])
+  const [ message, setMessage ] = useState(null)
+  const [ errorMessage, setErrorMessage ] = useState(null)
 
   useEffect(() => {
     contactService
@@ -44,7 +75,13 @@ const App = () => {
             setShowSearch(persons.map(person => person.id === personID ? changedContact : person))
             setNewName('')
             setNewNumber('')
-            
+          })
+          .catch(error => {
+            setErrorMessage('unable to update!')
+            setTimeout(() => {
+              setErrorMessage(null)
+              window.location.reload()
+              }, 4000)
           })
       }
       else{
@@ -55,8 +92,7 @@ const App = () => {
     else {
       const personObject = {
         name: newName,
-        number: newNumber,
-        id: persons.length + 1
+        number: newNumber
       }
 
       contactService
@@ -66,6 +102,19 @@ const App = () => {
           setShowSearch(persons.concat(updatedContacts))
           setNewNumber('')
           setNewName('')
+          setMessage(
+            `${newName} has been added!`
+          )
+          setTimeout(() => {
+            setMessage(null)
+          }, 4000)
+        })
+        .catch(error => {
+          setErrorMessage('unable to add!')
+          setTimeout(() => {
+            setErrorMessage(null)
+            window.location.reload()
+            }, 4000)
         })    
     }
   }
@@ -91,9 +140,11 @@ const App = () => {
   return (
     <div>
       <h1>Phonebook</h1>
+      <Message message = {message}/>
+      <Error errorMessage = {errorMessage}/>
       <SearchForm newSearch = {newSearch} handleNewSearch = {handleNewSearch}/>
       <PersonForm addPerson = {addPerson} newName = {newName} handleNewName = {handleNewName} newNumber = {newNumber} handleNewNumber = {handleNewNumber}/>
-      <Display showSearch = {showSearch} persons = {persons} setShowSearch = {setShowSearch} setPersons = {setPersons}/>
+      <Display showSearch = {showSearch} persons = {persons} setShowSearch = {setShowSearch} setPersons = {setPersons} setErrorMessage = {setErrorMessage} />
     </div>
   )
 }
