@@ -1,0 +1,3 @@
+[submodule "fso-notesapp"]
+	path = fso-notesapp
+	url = https://github.com/jojopuff/fso-notesapp
