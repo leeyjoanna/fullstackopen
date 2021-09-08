@@ -10,3 +10,5 @@ Topics include:
 * TypeScript
 * React Native
 * CI/CD
+
+As exercise/assignments become more complex and advance throughout the course, separate repositories are created to allow for create clarity. 
